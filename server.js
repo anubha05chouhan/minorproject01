@@ -2,6 +2,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken'); // Import JWT library
+const bcrypt = require('bcrypt'); // Import bcrypt library
 const { User } = require('./models'); // Import User model
 
 // Initialize Express app
@@ -15,6 +17,9 @@ mongoose.connect('mongodb://localhost:27017/restaurantDB', { useNewUrlParser: tr
 // Middleware
 app.use(bodyParser.json());
 
+// Secret key for JWT token (should be stored securely)
+const secretKey = 'your_secret_key_here';
+
 // Route to handle user registration
 app.post('/register', async (req, res) => {
     try {
@@ -24,8 +29,10 @@ app.post('/register', async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: 'Username already exists' });
         }
-        // Create new user
-        const newUser = new User({ username, password, role });
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        // Create new user with hashed password
+        const newUser = new User({ username, password: hashedPassword, role });
         await newUser.save();
         res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
@@ -34,21 +41,23 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// Route to handle user login
+// Route to handle user login and generate JWT token
 app.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         // Check if user exists
-        const user = await User.findOne({ username, password });
+        const user = await User.findOne({ username });
         if (!user) {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
-        // User authenticated, send appropriate response based on role
-        if (user.role === 'admin') {
-            return res.json({ role: 'admin' });
-        } else {
-            return res.json({ role: 'customer' });
+        // Compare passwords
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Invalid username or password' });
         }
+        // User authenticated, generate JWT token
+        const token = jwt.sign({ username: user.username, role: user.role }, secretKey, { expiresIn: '1h' });
+        res.json({ token });
     } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ message: 'Internal server error' });
