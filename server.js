@@ -2,7 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const { User, FoodItem, Order, Reservation, Menu } = require('./models'); // Import your models
+const { User, FoodItem, Order, Reservation, Menu, Cart } = require('./models'); // Import your models
 
 // Initialize Express app
 const app = express();
