@@ -20,6 +20,28 @@ app.use(bodyParser.json());
 // Secret key for JWT token (should be stored securely)
 const secretKey = 'your_secret_key_here';
 
+// Middleware to check if user is logged in
+const isLoggedIn = (req, res, next) => {
+    const token = req.headers.authorization;
+
+    // Check if token is provided
+    if (!token) {
+        return res.status(401).json({ message: 'Unauthorized: No token provided' });
+    }
+
+    // Verify token
+    jwt.verify(token, secretKey, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+        }
+        req.user = decoded;
+        next();
+    });
+};
+
+// Apply middleware globally
+app.use(isLoggedIn);
+
 // Route to handle user registration
 app.post('/register', async (req, res) => {
     try {
