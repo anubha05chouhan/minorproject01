@@ -99,6 +99,75 @@ app.put('/fooditems/:id', async (req, res) => {
     }
 });
 
+// Route to list all orders
+app.get('/order/list', async (req, res) => {
+    try {
+        const orders = await Order.find().populate('foodItem');
+        res.json(orders);
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Route to add a food item to the cart
+app.post('/cart/add', async (req, res) => {
+    try {
+        const { foodItemId } = req.body;
+        const foodItem = await FoodItem.findById(foodItemId);
+        if (!foodItem) {
+            return res.status(404).json({ message: 'Food item not found' });
+        }
+        // Assuming cart is associated with the user, you may need to add authentication
+        const cartItem = new Cart({ foodItemId });
+        await cartItem.save();
+        res.status(201).json({ message: 'Food item added to cart successfully' });
+    } catch (error) {
+        console.error('Error adding food item to cart:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Route to list all reservations
+app.get('/reservation/list', async (req, res) => {
+    try {
+        const reservations = await Reservation.find();
+        res.json(reservations);
+    } catch (error) {
+        console.error('Error fetching reservations:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Route to add a new reservation
+app.post('/reservation/add', async (req, res) => {
+    try {
+        const { time } = req.body;
+        const newReservation = new Reservation({ time });
+        await newReservation.save();
+        res.status(201).json({ message: 'Reservation added successfully' });
+    } catch (error) {
+        console.error('Error adding reservation:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Route to delete a reservation
+app.delete('/reservation/delete/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedReservation = await Reservation.findByIdAndDelete(id);
+        if (!deletedReservation) {
+            return res.status(404).json({ message: 'Reservation not found' });
+        }
+        res.json({ message: 'Reservation deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting reservation:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
